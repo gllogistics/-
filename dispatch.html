@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GL Logistics | Диспатчинг</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#55B7BD">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f0f4f5; color: #1E3B42; min-height: 100vh; }
+
+.app-wrapper { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+.top-bar { background: #fff; border-radius: 0 0 20px 20px; padding: .8rem 1.4rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+.brand { display: flex; align-items: center; gap: .6rem; font-weight: 800; font-size: 1rem; color: #1E3B42; text-decoration: none; }
+.brand img { height: 32px; }
+.btn-logout { margin-left: auto; background: none; border: 1.5px solid #e0eaeb; border-radius: 10px; padding: 6px 14px; color: #8fa8ab; font-size: .78rem; cursor: pointer; font-family: inherit; }
+.nav-links { display: flex; gap: 4px; margin-bottom: 1.4rem; padding: 4px; background: rgba(255,255,255,0.7); border-radius: 14px; width: fit-content; border: 1px solid rgba(85,183,189,0.15); }
+.nav-links a { background: transparent; color: #5a7a80; padding: 8px 18px; border-radius: 11px; text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: background .2s, color .2s; }
+.nav-links a:hover { background: #E8F6F6; color: #1E7A80; }
+.nav-links a.active { background: #55B7BD; color: #fff; font-weight: 600; }
+.nav-links a:active { transform: none !important; }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: .8rem; margin-bottom: 1.2rem; }
+.stat-card { background: #fff; border-radius: 14px; padding: 1rem 1.2rem; border: 1.5px solid #e8f4f5; }
+.stat-num { font-size: 1.4rem; font-weight: 800; color: #1E7A80; }
+.stat-lbl { font-size: .7rem; color: #8fa8ab; margin-top: 2px; text-transform: uppercase; letter-spacing: .3px; }
+.stat-card.green .stat-num { color: #2E7D32; }
+.stat-card.orange .stat-num { color: #E65100; }
+
+/* Toolbar */
+.toolbar { display: flex; gap: .6rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+.toolbar input, .toolbar select { background: #fff; border: 1.5px solid #e8f4f5; border-radius: 10px; padding: 8px 12px; color: #1E3B42; font-size: .8rem; outline: none; font-family: inherit; }
+.toolbar input:focus, .toolbar select:focus { border-color: #55B7BD; }
+.action-btn { background: #2E7D32; color: #fff; border: none; border-radius: 24px; padding: 9px 20px; font-size: .82rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: .2s; }
+.action-btn:hover { background: #1B5E20; }
+
+/* Table */
+.table-wrap { background: #fff; border-radius: 16px; overflow: hidden; border: 1.5px solid #e8f4f5; margin-bottom: 1.5rem; }
+table { width: 100%; border-collapse: collapse; }
+th { padding: .7rem 1rem; font-size: .7rem; font-weight: 700; color: #8fa8ab; text-transform: uppercase; letter-spacing: .5px; text-align: left; border-bottom: 1.5px solid #e8f4f5; background: #f8fbfc; }
+td { padding: .7rem 1rem; font-size: .82rem; border-bottom: 1px solid #f0f5f5; color: #1E3B42; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f5fbfb; }
+.empty-row { text-align: center; padding: 2.5rem; color: #8fa8ab; font-size: .85rem; }
+
+.status-badge { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+.status-sent     { background: #E3F2FD; color: #1565C0; }
+.status-transit  { background: #FFF3E0; color: #E65100; }
+.status-delivered{ background: #E8F5E9; color: #2E7D32; }
+
+/* Modal */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; }
+.modal.open { display: flex; }
+.modal-box { background: #fff; border-radius: 20px; padding: 1.5rem; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,.15); max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 1rem; font-weight: 700; color: #1E7A80; margin-bottom: 1rem; }
+.form-group { margin-bottom: .7rem; }
+.form-group label { font-size: .72rem; color: #8fa8ab; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; display: block; margin-bottom: 3px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; background: #f8fbfc; border: 1.5px solid #e8f4f5; border-radius: 10px; padding: 9px 12px; color: #1E3B42; font-size: .85rem; outline: none; font-family: inherit; }
+.form-group input:focus, .form-group select:focus { border-color: #55B7BD; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.modal-footer { display: flex; gap: .6rem; justify-content: flex-end; margin-top: 1rem; }
+.btn-secondary { background: #f0f4f5; color: #5a7a80; border: none; border-radius: 12px; padding: 9px 18px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+@media (max-width: 768px) {
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .form-row-2 { grid-template-columns: 1fr; }
+  table { font-size: .75rem; }
+  th, td { padding: .5rem .6rem; }
+}
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="top-bar">
+    <a href="/" class="brand"><img src="images/GL_LOGISTICs_line_-09.jpg.png" alt="GL"><span>GL Logistics • Диспатчинг</span></a>
+    <button class="btn-logout" id="logoutBtn">Выйти</button>
+  </div>
+
+  <div class="nav-links" id="navLinks"></div>
+
+  <!-- Статистика -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-lbl">🚛 Всего машин</div></div>
+    <div class="stat-card green"><div class="stat-num" id="statDelivered">0</div><div class="stat-lbl">✅ Доставлено</div></div>
+    <div class="stat-card orange"><div class="stat-num" id="statTransit">0</div><div class="stat-lbl">🔄 В пути</div></div>
+    <div class="stat-card"><div class="stat-num" id="statRevenue">€0</div><div class="stat-lbl">💰 Сумма за период</div></div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="toolbar">
+    <input type="date" id="filterStart">
+    <span style="color:#8fa8ab">—</span>
+    <input type="date" id="filterEnd">
+    <select id="filterStatus">
+      <option value="">Все статусы</option>
+      <option value="sent">Отправлена</option>
+      <option value="transit">В пути</option>
+      <option value="delivered">Доставлена</option>
+    </select>
+    <button class="action-btn" id="addBtn" style="margin-left:auto">+ Добавить машину</button>
+  </div>
+
+  <!-- Таблица -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Дата</th>
+          <th>Машина</th>
+          <th>Водитель</th>
+          <th>Маршрут</th>
+          <th>Груз</th>
+          <th>Ставка</th>
+          <th>Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="dispatchTable">
+        <tr><td colspan="9" class="empty-row">Загрузка...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="dispatchModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Добавить машину</div>
+    <div class="form-row-2">
+      <div class="form-group"><label>Дата</label><input type="date" id="fDate"></div>
+      <div class="form-group"><label>Номер машины</label><input id="fTruck" placeholder="AB 1234 CD"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group"><label>Водитель</label><input id="fDriver" placeholder="Имя водителя"></div>
+      <div class="form-group"><label>Клиент</label><input id="fClient" value="Prom Group LLC"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group"><label>Откуда</label><input id="fFrom" placeholder="Ереван, Армения"></div>
+      <div class="form-group"><label>Куда</label><input id="fTo" placeholder="Милан, Италия"></div>
+    </div>
+    <div class="form-group"><label>Груз</label><input id="fCargo" placeholder="Рефрижератор, продукты..."></div>
+    <div class="form-row-2">
+      <div class="form-group"><label>Ставка</label><input type="number" id="fRate" placeholder="0" step="0.01"></div>
+      <div class="form-group"><label>Валюта</label>
+        <select id="fCurrency">
+          <option value="EUR">EUR €</option>
+          <option value="USD">USD $</option>
+          <option value="AMD">AMD ֏</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Статус</label>
+      <select id="fStatus">
+        <option value="sent">Отправлена</option>
+        <option value="transit">В пути</option>
+        <option value="delivered">Доставлена</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Заметки</label><textarea id="fNotes" rows="2" style="resize:vertical"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="cancelBtn">Отмена</button>
+      <button class="action-btn" id="saveBtn">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://gl-api.gltransam.workers.dev';
+const SESSION_MAX = 12 * 60 * 60 * 1000;
+const user = localStorage.getItem('gl_staff_user');
+const loginTime = parseInt(localStorage.getItem('gl_staff_login_time') || '0');
+if (!user || !loginTime || (Date.now() - loginTime) > SESSION_MAX) { window.location.replace('/staff.html'); throw new Error(''); }
+
+function api(path, method='GET', body=null) {
+  const opts = {method, headers: {'Content-Type':'application/json'}};
+  const token = localStorage.getItem('gl_staff_token');
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(WORKER + path, opts).then(r => r.json());
+}
+
+const fmt = n => Number(n||0).toLocaleString('ru', {maximumFractionDigits:0});
+const statusMap = {sent:'Отправлена', transit:'В пути', delivered:'Доставлена'};
+const statusClass = {sent:'status-sent', transit:'status-transit', delivered:'status-delivered'};
+const curSign = {EUR:'€', USD:'$', AMD:'֏'};
+
+let allData = [], editingId = null;
+
+async function load() {
+  const start = document.getElementById('filterStart').value;
+  const end   = document.getElementById('filterEnd').value;
+  const status = document.getElementById('filterStatus').value;
+
+  let url = '/api/dispatches';
+  const params = [];
+  if (start) params.push('start='+start);
+  if (end)   params.push('end='+end);
+  if (status) params.push('status='+status);
+  if (params.length) url += '?' + params.join('&');
+
+  allData = await api(url).catch(() => []);
+  render();
+}
+
+function render() {
+  const tbody = document.getElementById('dispatchTable');
+  if (!allData.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-row">Нет записей за выбранный период</td></tr>';
+  } else {
+    tbody.innerHTML = allData.map((d, i) => `
+      <tr>
+        <td style="color:#8fa8ab;font-size:.75rem">${i+1}</td>
+        <td>${d.date || ''}</td>
+        <td style="font-weight:700">${d.truck_number || ''}</td>
+        <td>${d.driver_name || ''}</td>
+        <td style="font-size:.78rem">${d.route_from||''} → ${d.route_to||''}</td>
+        <td style="font-size:.78rem">${d.cargo || ''}</td>
+        <td style="font-weight:700;color:#1E7A80">${curSign[d.rate_currency]||'€'}${fmt(d.rate)}</td>
+        <td><span class="status-badge ${statusClass[d.status]||'status-sent'}">${statusMap[d.status]||d.status}</span></td>
+        <td>
+          <div style="display:flex;gap:4px">
+            <button onclick="editDispatch(${d.id})" style="background:#f0f9f9;color:#1E7A80;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.75rem">✏️</button>
+            <button onclick="deleteDispatch(${d.id})" style="background:#FEF2F2;color:#C62828;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.75rem">✕</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  // Статистика
+  const total = allData.length;
+  const delivered = allData.filter(d=>d.status==='delivered').length;
+  const transit = allData.filter(d=>d.status==='transit').length;
+  const revenue = allData.reduce((s,d) => s + (parseFloat(d.rate)||0), 0);
+  const mainCur = allData[0]?.rate_currency || 'EUR';
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDelivered').textContent = delivered;
+  document.getElementById('statTransit').textContent = transit;
+  document.getElementById('statRevenue').textContent = (curSign[mainCur]||'€') + fmt(revenue);
+}
+
+function openModal(d=null) {
+  editingId = d?.id || null;
+  document.getElementById('modalTitle').textContent = d ? 'Редактировать запись' : 'Добавить машину';
+  document.getElementById('fDate').value = d?.date || new Date().toISOString().slice(0,10);
+  document.getElementById('fTruck').value = d?.truck_number || '';
+  document.getElementById('fDriver').value = d?.driver_name || '';
+  document.getElementById('fClient').value = d?.client || 'Prom Group LLC';
+  document.getElementById('fFrom').value = d?.route_from || '';
+  document.getElementById('fTo').value = d?.route_to || '';
+  document.getElementById('fCargo').value = d?.cargo || '';
+  document.getElementById('fRate').value = d?.rate || '';
+  document.getElementById('fCurrency').value = d?.rate_currency || 'EUR';
+  document.getElementById('fStatus').value = d?.status || 'sent';
+  document.getElementById('fNotes').value = d?.notes || '';
+  document.getElementById('dispatchModal').classList.add('open');
+}
+
+window.editDispatch = id => openModal(allData.find(d => d.id === id));
+window.deleteDispatch = async id => {
+  if (!confirm('Удалить запись?')) return;
+  await api('/api/dispatches/' + id, 'DELETE');
+  load();
+};
+
+document.getElementById('addBtn').addEventListener('click', () => openModal());
+document.getElementById('cancelBtn').addEventListener('click', () => document.getElementById('dispatchModal').classList.remove('open'));
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  ['gl_staff_user','gl_staff_login_time','gl_staff_token'].forEach(k=>localStorage.removeItem(k));
+  window.location.href = 'staff.html';
+});
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const body = {
+    date: document.getElementById('fDate').value,
+    truck_number: document.getElementById('fTruck').value,
+    driver_name: document.getElementById('fDriver').value,
+    client: document.getElementById('fClient').value,
+    route_from: document.getElementById('fFrom').value,
+    route_to: document.getElementById('fTo').value,
+    cargo: document.getElementById('fCargo').value,
+    rate: parseFloat(document.getElementById('fRate').value) || 0,
+    rate_currency: document.getElementById('fCurrency').value,
+    status: document.getElementById('fStatus').value,
+    notes: document.getElementById('fNotes').value,
+    created_by: user
+  };
+  if (editingId) await api('/api/dispatches/' + editingId, 'PUT', body);
+  else await api('/api/dispatches', 'POST', body);
+  document.getElementById('dispatchModal').classList.remove('open');
+  load();
+});
+
+['filterStart','filterEnd','filterStatus'].forEach(id => document.getElementById(id).addEventListener('change', load));
+
+// Дефолтный период — текущий месяц
+const now = new Date();
+document.getElementById('filterStart').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+document.getElementById('filterEnd').value = now.toISOString().slice(0,10);
+
+// Навигация по роли
+document.addEventListener('DOMContentLoaded', function() {
+  var isAdm = localStorage.getItem('gl_staff_role') === 'admin';
+  var an = '<a href="/staff-dashboard.html">📊 Главная</a><a href="/staff-cargo.html">📦 Сделки</a><a href="/rateconfirmation">📋 Заявки</a><a href="/invoice">🧾 Инвойс</a><a href="/trip-report">🚛 Рейсы</a><a href="/clients">👥 Клиенты</a><a href="/files">📁 Файлы</a><a href="/expenses.html">💼 Расходы</a><a href="/dispatch.html" class="active">🛰 Диспатчинг</a>';
+  var ln = '<a href="/staff-cargo.html">📦 Сделки</a><a href="/rateconfirmation">📋 Заявки</a><a href="/invoice">🧾 Инвойс</a><a href="/trip-report">🚛 Рейсы</a>';
+  var el = document.getElementById('navLinks');
+  if (el) el.innerHTML = isAdm ? an : ln;
+});
+
+load();
+</script>
+</body>
+</html>
