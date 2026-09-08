@@ -74,6 +74,10 @@ tr:hover td { background: #f5fbfb; }
 </style>
 </head>
 <body>
+
+<datalist id="truckList"></datalist>
+<datalist id="driverList"></datalist>
+
 <div class="app-wrapper">
   <div class="top-bar">
     <a href="/" class="brand"><img src="images/GL_LOGISTICs_line_-09.jpg.png" alt="GL"><span>GL Logistics • Диспатчинг</span></a>
@@ -133,10 +137,10 @@ tr:hover td { background: #f5fbfb; }
     <div class="modal-title" id="modalTitle">Добавить машину</div>
     <div class="form-row-2">
       <div class="form-group"><label>Дата</label><input type="date" id="fDate"></div>
-      <div class="form-group"><label>Номер машины</label><input id="fTruck" placeholder="AB 1234 CD"></div>
+      <div class="form-group"><label>Номер машины</label><input id="fTruck" placeholder="AB 1234 CD" list="truckList" autocomplete="off"></div>
     </div>
     <div class="form-row-2">
-      <div class="form-group"><label>Водитель</label><input id="fDriver" placeholder="Имя водителя"></div>
+      <div class="form-group"><label>Водитель</label><input id="fDriver" placeholder="Имя водителя" list="driverList" autocomplete="off"></div>
       <div class="form-group"><label>Клиент</label><input id="fClient" value="Prom Group LLC"></div>
     </div>
     <div class="form-row-2">
@@ -190,6 +194,17 @@ const statusClass = {sent:'status-sent', transit:'status-transit', delivered:'st
 const curSign = {EUR:'€', USD:'$', AMD:'֏'};
 
 let allData = [], editingId = null;
+
+
+// Загружаем список машин и водителей из истории
+async function loadSuggestions() {
+  const all = await api('/api/dispatches?start=2020-01-01&end=2099-12-31').catch(() => []);
+  const trucks = [...new Set(all.map(d => d.truck_number).filter(Boolean))].sort();
+  const drivers = [...new Set(all.map(d => d.driver_name).filter(Boolean))].sort();
+  
+  document.getElementById('truckList').innerHTML = trucks.map(t => `<option value="${t}">`).join('');
+  document.getElementById('driverList').innerHTML = drivers.map(d => `<option value="${d}">`).join('');
+}
 
 async function load() {
   const start = document.getElementById('filterStart').value;
@@ -258,6 +273,7 @@ function openModal(d=null) {
   document.getElementById('fCurrency').value = d?.rate_currency || 'EUR';
   document.getElementById('fStatus').value = d?.status || 'sent';
   document.getElementById('fNotes').value = d?.notes || '';
+  loadSuggestions();
   document.getElementById('dispatchModal').classList.add('open');
 }
 
